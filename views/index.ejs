@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Трекер рабочего времени</title>
+	<script>
+		var load = function() {
+			var editButtons = document.getElementsByClassName('edit');
+			Array.prototype.forEach.call(editButtons, function(button) {
+				button.addEventListener('click', function(e) {
+					var div = this.parentElement.getElementsByClassName('edit-form')[0];
+					
+					var content = this.textContent;
+					if(content === 'Редактировать') {
+						this.textContent = 'Скрыть';
+						div.className = 'edit-form';
+					}
+					else {
+						this.textContent = 'Редактировать';			
+						div.className = 'edit-form hide';		
+					}
+					
+					e.preventDefault();
+				});
+			});
+			
+		}
+		setTimeout(load, 0);
+		
+	</script>
+	<style>
+		.hide {
+			display: none !important;			
+		}
+		.edit-form {
+			display: inline-block;
+		}
+	</style>
+</head>
+<body>
+	<div>
+        <% for(var i = 0; i < data.daysObjectsArray.length; i++) { %>
+			<div>
+				<%= data.daysObjectsArray[i].str %>
+				<% if(data.daysObjectsArray[i].fake !== true) { %>
+					<a href="#" class="edit">Редактировать</a>
+					<div class="edit-form hide">
+						<form method="POST" action="/editDay/<%= i %>">
+							<input type="hidden" name="username" value="<%= username %>" />
+							<input type="text" name="inDate" value="<%= data.daysObjectsArray[i].inDate %>" />
+							<% if(data.daysObjectsArray[i].outDate !== 'сейчас') { %>
+								<input type="text" name="outDate" value="<%= data.daysObjectsArray[i].outDate %>" />
+							<% } %>
+							<input type="submit" value="Сохранить" />
+						</form>
+
+					</div>
+				<% } %>
+			</div>
+        <% } %>
+		<br>
+		<br>
+		Осталось <%= data.left %> (~ <%= data.leftPerDay %> в день)
+		<br>
+		Идеальный конец рабочего дня в <%= data.endDay %>
+		<br>
+		Рекомендуемый конец рабочего дня в <%= data.recommendedEndDay %>
+	</div>
+	<br>
+	<% if(!currentDayFinished) { %>
+		<div>
+			<form action="/check" method="POST">
+				<input type="hidden" name="username" value="<%= username %>" />
+				<% if(data.daysObjectsArray[data.daysObjectsArray.length - 1].outDate === 'сейчас') { %>
+					<input type="submit" value="Я ухожу!" />
+				<% } else { %>
+					<input type="submit" value="Я пришел!" />
+				<% } %>
+			</form>
+		</div>
+	<% } %>
+	<div style="margin-top: 50px;">
+		<form action="/subscribe" method="POST">
+			<input type="hidden" name="username" value="<%= username %>" />
+			<% if(!subscription) { %>
+				<label>username в slack</label>
+				<input type="text" name="slackUsername" value="" />
+				<br>
+				<input type="submit" value="Подписаться" />
+			<% } else { %>
+				Подписан в slack: <%= subscription.slack_username %>
+				<br>
+				<input type="submit" value="Отписаться" />
+			<% } %>
+		</form>
+	</div>
+	<div style="margin-top: 300px;">
+		На этой страничке не предусмотрена защита от дурака, поэтому не делайте глупостей.
+	</div>
+</body>
+</html>

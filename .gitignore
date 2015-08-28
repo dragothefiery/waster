@@ -1,0 +1,4 @@
+.env
+.settings
+node_modules
+.codio
