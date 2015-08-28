@@ -49,9 +49,9 @@
 					<div class="edit-form hide">
 						<form method="POST" action="/editDay/<%= i %>">
 							<input type="hidden" name="username" value="<%= username %>" />
-							<input type="text" name="inDate" value="<%= data.daysObjectsArray[i].inDate %>" />
-							<% if(data.daysObjectsArray[i].outDate !== 'сейчас') { %>
-								<input type="text" name="outDate" value="<%= data.daysObjectsArray[i].outDate %>" />
+							<input type="text" name="inDate" value="<%= data.daysObjectsArray[i].from %>" />
+							<% if(data.daysObjectsArray[i].to !== 'сейчас') { %>
+								<input type="text" name="outDate" value="<%= data.daysObjectsArray[i].to %>" />
 							<% } %>
 							<input type="submit" value="Сохранить" />
 						</form>
