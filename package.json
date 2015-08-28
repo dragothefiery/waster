@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "pm2 startOrRestart ecosystem.json --env development"
+    "start": "pm2 startOrRestart ecosystem.json --env production"
   },
   "dependencies": {
     "express": "~4.9.0",

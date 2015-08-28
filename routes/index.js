@@ -13,10 +13,9 @@ router.get('/', function(req, res) {
 		WorkTime.get(req.query.username).then(function(data) {
 			sequelize.query("SELECT * FROM subscriptions WHERE username = '" + req.query.username + "'").spread(function(subscription) {
 				
-				//data.daysObjectsArray.length > 0 && data.daysObjectsArray[data.daysObjectsArray.length - 1].outDate !== 'сейчас'
 				var currentDayFinished = false;
 				var currentDay = data.daysObjectsArray.find(function(item) { return item.day === moment().isoWeekday() && item.fake !== true });
-				currentDayFinished = currentDay != null && currentDay.outDate !== 'сейчас';
+				currentDayFinished = currentDay != null && currentDay.to !== 'сейчас';
 				res.render('index', {
 					data: data,
 					subscription: subscription.length > 0 ? subscription[0] : null,

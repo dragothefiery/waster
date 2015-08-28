@@ -40,7 +40,10 @@
 	<div>
         <% for(var i = 0; i < data.daysObjectsArray.length; i++) { %>
 			<div>
-				<%= data.daysObjectsArray[i].str %>
+				<%= data.daysObjectsArray[i].weekdayName %>: <%= data.daysObjectsArray[i].workedThisDay %>, 
+				<%= data.daysObjectsArray[i].overUnder ? 'переработка' : 'недоработка' %> <%= data.daysObjectsArray[i].overUnderText %> 
+				(c <%= data.daysObjectsArray[i].from %> до <%= data.daysObjectsArray[i].to %>)
+				
 				<% if(data.daysObjectsArray[i].fake !== true) { %>
 					<a href="#" class="edit">Редактировать</a>
 					<div class="edit-form hide">
@@ -70,7 +73,7 @@
 		<div>
 			<form action="/check" method="POST">
 				<input type="hidden" name="username" value="<%= username %>" />
-				<% if(data.daysObjectsArray[data.daysObjectsArray.length - 1].outDate === 'сейчас') { %>
+				<% if(data.daysObjectsArray[data.daysObjectsArray.length - 1].to === 'сейчас') { %>
 					<input type="submit" value="Я ухожу!" />
 				<% } else { %>
 					<input type="submit" value="Я пришел!" />

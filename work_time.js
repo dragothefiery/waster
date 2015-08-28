@@ -51,31 +51,44 @@ function get(username) {
 		daysArray.forEach(function(day) {
 			
 			// Переработка или недоработка
-			var overUnder = day.minutes > WORK_DAY_MINUTES ? 'переработка' : 'недоработка';
+			var overUnder = day.minutes > WORK_DAY_MINUTES;// ? 'переработка' : 'недоработка';
 			var overUnderMinutes = Math.abs((leftMinutes >= WORK_DAY_MINUTES ? WORK_DAY_MINUTES : leftMinutes) - day.minutes);
 			if(day.outDate != null) {
 				totalOverUnderTime += day.minutes > WORK_DAY_MINUTES ? overUnderMinutes : -overUnderMinutes;				
-			}			
-			
-			var str = weekdays[day.day] + ': ' + minutesToHuman(day.minutes);
+			}
 			
 			// Если день длился ровно 8 ч 30 мин, не показываем нулевую переработку/недоработку
-			if(overUnderMinutes != 0) {
-				str += ', ' + overUnder + ' ' + minutesToHuman(overUnderMinutes);
-				
+			if(overUnderMinutes != 0) {				
 				if(day.inDate != null) {
 					var from = day.inDate.format('HH:mm');
 					var to = 'сейчас';
 					if(day.outDate != null) to = day.outDate.format('HH:mm');
-					str += ' (с ' + from + ' до ' + to + ')';
 				}
 			}
 			daysObjectsArray.push({
-				str: str,
-				inDate: from,
-				outDate: to,
-				day: day.day,
-				fake: day.fake
+				// День недели (строкой)
+				weekdayName: weekdays[day.day],
+				
+				// Сколько отработал за этот день
+				workedThisDay: minutesToHuman(day.minutes),
+				
+				// Недоработка или переработка
+				overUnder: overUnder,
+				
+				// Количество минут переработка/недоработки
+				overUnderMinutes: overUnderMinutes,
+				
+				// Время недоработки/переработки в тексте
+				overUnderText: minutesToHuman(overUnderMinutes),
+								
+				// Информация о дне
+				day: day,
+				
+				// Время прихода (строкой)
+				from: from,
+				
+				// Время ухода (строкой)
+				to: to
 			});
 			
 			leftMinutes -= day.minutes;
@@ -107,8 +120,7 @@ function get(username) {
 		}
 		
 		// Время рекомендованного конца рабочего дня
-		var recommendedEndOfCurrentDay = latestDay.inDate.add(minutesPerLeftDays, 'minutes');
-		
+		var recommendedEndOfCurrentDay = latestDay.inDate.add(minutesPerLeftDays, 'minutes');		
 		
 		var result = {
 			daysObjectsArray: daysObjectsArray,

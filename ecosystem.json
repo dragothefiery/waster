@@ -15,7 +15,6 @@
     {
       name      : "waster",
       script    : "./bin/www",
-	  watch: true,
       env: {
         COMMON_VARIABLE: "true",
 		DB_HOST: "212.71.232.173",
