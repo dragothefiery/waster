@@ -58,13 +58,20 @@
 						<% for(var i = 0; i < data.daysObjectsArray.length; i++) { %>
 							<ul class="lst timer-lst">
 								<li class="lst_i timer-lst_i">
-										<%= data.daysObjectsArray[i].weekdayName %>: <%= data.daysObjectsArray[i].workedThisDay %>, 
-										<%= data.daysObjectsArray[i].overUnder ? 'переработка' : 'недоработка' %> <%= data.daysObjectsArray[i].overUnderText %> 
-										(c <%= data.daysObjectsArray[i].from %> до <%= data.daysObjectsArray[i].to %>)
+										<div>
+											<span class="timer-lst_day"><%= data.daysObjectsArray[i].weekdayName %></span>: <%= data.daysObjectsArray[i].workedThisDay %>, 
+
+											<%= data.daysObjectsArray[i].overUnder ? 'переработка' : 'недоработка' %> <%= data.daysObjectsArray[i].overUnderText %> 
+											(c <%= data.daysObjectsArray[i].from %> до <%= data.daysObjectsArray[i].to %>)
+											
+
+											<% if(data.daysObjectsArray[i].fake !== true) { %>
+										</div>
 										
-										
-										<% if(data.daysObjectsArray[i].fake !== true) { %>
-										<a href="#" class="edit">Редактировать</a>
+
+											<a href="#" class="edit">Редактировать</a>
+
+			
 										<div class="edit-form hide">
 											<form method="POST" action="/editDay/<%= i %>">
 												<div class ="row">
@@ -84,9 +91,10 @@
 											</form>
 
 										</div>
-									<% } %>
+									
 								</li>
 							</ul>
+							<% } %>
 						<% } %>
 
 						<br>
