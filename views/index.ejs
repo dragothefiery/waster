@@ -41,91 +41,119 @@
 </head>
 <body>
 	<div class="wrapper">
+
+		<!-- Header -->
 		<div class="header">
 			<div class="h __h_l __light">
 				Трекер рабочего времени
 			</div>
 		</div>
+		<!-- /Header -->
+
+		<!-- Content -->
 		<div class="cnt">
 			<div class="container">
+				<div class="row">
+					<div class="col-xs-12 col-sm-12 col-md-8 col-lg-8 col-md-offset-2 col-lg-offset-2">
+						<% for(var i = 0; i < data.daysObjectsArray.length; i++) { %>
+							<ul class="lst timer-lst">
+								<li class="lst_i timer-lst_i">
+										<%= data.daysObjectsArray[i].weekdayName %>: <%= data.daysObjectsArray[i].workedThisDay %>, 
+										<%= data.daysObjectsArray[i].overUnder ? 'переработка' : 'недоработка' %> <%= data.daysObjectsArray[i].overUnderText %> 
+										(c <%= data.daysObjectsArray[i].from %> до <%= data.daysObjectsArray[i].to %>)
+										
+										
+										<% if(data.daysObjectsArray[i].fake !== true) { %>
+										<a href="#" class="edit">Редактировать</a>
+										<div class="edit-form hide">
+											<form method="POST" action="/editDay/<%= i %>">
+												<div class ="row">
+													<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+														<input type="hidden" name="username" value="<%= username %>" class="it"/>
+														<input type="text" name="inDate" value="<%= data.daysObjectsArray[i].from %>" class="it"/>
+													</div>
+													<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+														<% if(data.daysObjectsArray[i].to !== 'сейчас') { %>
+															<input type="text" name="outDate" value="<%= data.daysObjectsArray[i].to %>" class="it"/>
+														<% } %>
+													</div>
+													<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+														<input type="submit" value="Сохранить" class="btn"/>
+													</div>
+												</div>
+											</form>
 
-				<% for(var i = 0; i < data.daysObjectsArray.length; i++) { %>
-					<ul class="lst timer-lst">
-						<li class="lst_i timer-lst_i">
-							<%= data.daysObjectsArray[i].weekdayName %>: <%= data.daysObjectsArray[i].workedThisDay %>, 
-							<%= data.daysObjectsArray[i].overUnder ? 'переработка' : 'недоработка' %> <%= data.daysObjectsArray[i].overUnderText %> 
-							(c <%= data.daysObjectsArray[i].from %> до <%= data.daysObjectsArray[i].to %>)
-							
-							<% if(data.daysObjectsArray[i].fake !== true) { %>
-								<a href="#" class="edit">Редактировать</a>
-								<div class="edit-form hide">
-									<form method="POST" action="/editDay/<%= i %>">
-										<input type="hidden" name="username" value="<%= username %>" class="it"/>
-										<input type="text" name="inDate" value="<%= data.daysObjectsArray[i].from %>" class="it"/>
-										<% if(data.daysObjectsArray[i].to !== 'сейчас') { %>
-											<input type="text" name="outDate" value="<%= data.daysObjectsArray[i].to %>" />
+										</div>
+									<% } %>
+								</li>
+							</ul>
+						<% } %>
+
+						<br>
+
+						<div class="result">
+							<div class="result_work">
+								Осталось <%= data.left %> (~ <%= data.leftPerDay %> в день)
+							</div>
+							<div class="result_finish">
+								Идеальный конец рабочего дня в <%= data.endDay %>
+							</div>
+							<div class="result_advice">
+								Рекомендуемый конец рабочего дня в <%= data.recommendedEndDay %>
+							</div>
+							<br>
+							<% if(!currentDayFinished) { %>
+								<div>
+									<form action="/check" method="POST">
+										<input type="hidden" name="username" value="<%= username %>" />
+										<% if(data.daysObjectsArray[data.daysObjectsArray.length - 1].to === 'сейчас') { %>
+											<input type="submit" value="Я ухожу!" />
+										<% } else { %>
+											<input type="submit" value="Я пришел!" class="btn"/>
 										<% } %>
-										<input type="submit" value="Сохранить" class="btn"/>
 									</form>
-
 								</div>
 							<% } %>
-						</li>
-					</ul>
-				<% } %>
+						</div>
 
-				<br>
-
-				<div class="result">
-					<div class="div">
-						Осталось <%= data.left %> (~ <%= data.leftPerDay %> в день)
-					</div>
-					<div class="div">
-						Идеальный конец рабочего дня в <%= data.endDay %>
-					</div>
-					<div class="div">
-						Рекомендуемый конец рабочего дня в <%= data.recommendedEndDay %>
-					</div>
-					<br>
-					<% if(!currentDayFinished) { %>
-						<div>
-							<form action="/check" method="POST">
+						<div class="slack">
+							<form action="/subscribe" method="POST">
 								<input type="hidden" name="username" value="<%= username %>" />
-								<% if(data.daysObjectsArray[data.daysObjectsArray.length - 1].to === 'сейчас') { %>
-									<input type="submit" value="Я ухожу!" />
+								<% if(!subscription) { %>
+									<div class ="row">
+										<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+											<label>username в slack</label>
+										</div>
+										<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+											<input type="text" name="slackUsername" value="" class="it"/>
+										</div>
+										<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+											<input type="submit" value="Подписаться" class="btn"/>
+										</div>
+									</div>
 								<% } else { %>
-									<input type="submit" value="Я пришел!" class="btn"/>
+									Подписан в slack: <%= subscription.slack_username %>
+									<br>
+
+									<input type="submit" value="Отписаться" class="btn"/>
 								<% } %>
 							</form>
 						</div>
-					<% } %>
+						<div class="fool">
+							На этой страничке не предусмотрена защита от дурака, поэтому не делайте глупостей.
+						</div>
+					</div>
 				</div>
 
-				<div class="slack">
-					<form action="/subscribe" method="POST">
-						<input type="hidden" name="username" value="<%= username %>" />
-						<% if(!subscription) { %>
-							<label>username в slack</label>
-							<input type="text" name="slackUsername" value="" class="it"/>
-							<br>
-							<input type="submit" value="Подписаться" class="btn"/>
-						<% } else { %>
-							Подписан в slack: <%= subscription.slack_username %>
-							<br>
-
-							<input type="submit" value="Отписаться" class="btn"/>
-						<% } %>
-					</form>
-				</div>
-				<div class="fool">
-					На этой страничке не предусмотрена защита от дурака, поэтому не делайте глупостей.
-				</div>
 			</div>
 		</div>
+		<!-- /Content -->
 		<div class="push"></div>
 	</div>
+	<!-- Footer -->
 	<div class="footer">
 		<a href="#" class="copyright">Copyright</a>
 	</div>
+	<!-- /Footer -->
 </body>
 </html>
