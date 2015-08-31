@@ -48,9 +48,10 @@
 		</div>
 		<div class="cnt">
 			<div class="container">
-				<div>
-					<% for(var i = 0; i < data.daysObjectsArray.length; i++) { %>
-						<div>
+
+				<% for(var i = 0; i < data.daysObjectsArray.length; i++) { %>
+					<ul class="lst timer-lst">
+						<li class="lst_i timer-lst_i">
 							<%= data.daysObjectsArray[i].weekdayName %>: <%= data.daysObjectsArray[i].workedThisDay %>, 
 							<%= data.daysObjectsArray[i].overUnder ? 'переработка' : 'недоработка' %> <%= data.daysObjectsArray[i].overUnderText %> 
 							(c <%= data.daysObjectsArray[i].from %> до <%= data.daysObjectsArray[i].to %>)
@@ -59,56 +60,65 @@
 								<a href="#" class="edit">Редактировать</a>
 								<div class="edit-form hide">
 									<form method="POST" action="/editDay/<%= i %>">
-										<input type="hidden" name="username" value="<%= username %>" />
-										<input type="text" name="inDate" value="<%= data.daysObjectsArray[i].from %>" />
+										<input type="hidden" name="username" value="<%= username %>" class="it"/>
+										<input type="text" name="inDate" value="<%= data.daysObjectsArray[i].from %>" class="it"/>
 										<% if(data.daysObjectsArray[i].to !== 'сейчас') { %>
 											<input type="text" name="outDate" value="<%= data.daysObjectsArray[i].to %>" />
 										<% } %>
-										<input type="submit" value="Сохранить" />
+										<input type="submit" value="Сохранить" class="btn"/>
 									</form>
 
 								</div>
 							<% } %>
+						</li>
+					</ul>
+				<% } %>
+
+				<br>
+
+				<div class="result">
+					<div class="div">
+						Осталось <%= data.left %> (~ <%= data.leftPerDay %> в день)
+					</div>
+					<div class="div">
+						Идеальный конец рабочего дня в <%= data.endDay %>
+					</div>
+					<div class="div">
+						Рекомендуемый конец рабочего дня в <%= data.recommendedEndDay %>
+					</div>
+					<br>
+					<% if(!currentDayFinished) { %>
+						<div>
+							<form action="/check" method="POST">
+								<input type="hidden" name="username" value="<%= username %>" />
+								<% if(data.daysObjectsArray[data.daysObjectsArray.length - 1].to === 'сейчас') { %>
+									<input type="submit" value="Я ухожу!" />
+								<% } else { %>
+									<input type="submit" value="Я пришел!" class="btn"/>
+								<% } %>
+							</form>
 						</div>
 					<% } %>
-					<br>
-					<br>
-					Осталось <%= data.left %> (~ <%= data.leftPerDay %> в день)
-					<br>
-					Идеальный конец рабочего дня в <%= data.endDay %>
-					<br>
-					Рекомендуемый конец рабочего дня в <%= data.recommendedEndDay %>
 				</div>
-				<br>
-				<% if(!currentDayFinished) { %>
-					<div>
-						<form action="/check" method="POST">
-							<input type="hidden" name="username" value="<%= username %>" />
-							<% if(data.daysObjectsArray[data.daysObjectsArray.length - 1].to === 'сейчас') { %>
-								<input type="submit" value="Я ухожу!" />
-							<% } else { %>
-								<input type="submit" value="Я пришел!" />
-							<% } %>
-						</form>
-					</div>
-				<% } %>
-				<div style="margin-top: 50px;">
+
+				<div class="slack">
 					<form action="/subscribe" method="POST">
 						<input type="hidden" name="username" value="<%= username %>" />
 						<% if(!subscription) { %>
 							<label>username в slack</label>
-							<input type="text" name="slackUsername" value="" />
+							<input type="text" name="slackUsername" value="" class="it"/>
 							<br>
-							<input type="submit" value="Подписаться" />
+							<input type="submit" value="Подписаться" class="btn"/>
 						<% } else { %>
 							Подписан в slack: <%= subscription.slack_username %>
 							<br>
-							<input type="submit" value="Отписаться" />
+
+							<input type="submit" value="Отписаться" class="btn"/>
 						<% } %>
 					</form>
 				</div>
-				<div style="margin-top: 300px;">
-					!На этой страничке не предусмотрена защита от дурака, поэтому не делайте глупостей.
+				<div class="fool">
+					На этой страничке не предусмотрена защита от дурака, поэтому не делайте глупостей.
 				</div>
 			</div>
 		</div>
