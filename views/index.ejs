@@ -55,48 +55,50 @@
 			<div class="container">
 				<div class="row">
 					<div class="col-xs-12 col-sm-12 col-md-8 col-lg-8 col-md-offset-2 col-lg-offset-2">
-						<% for(var i = 0; i < data.daysObjectsArray.length; i++) { %>
-							<ul class="lst timer-lst">
-								<li class="lst_i timer-lst_i">
-										<div>
-											<span class="timer-lst_day"><%= data.daysObjectsArray[i].weekdayName %></span>: <%= data.daysObjectsArray[i].workedThisDay %>, 
+						<ul class="lst timer-lst">
+							
+							<% for(var i = 0; i < data.daysObjectsArray.length; i++) { %>
+							<li class="lst_i timer-lst_i">
+								
+									<div>
+										<span class="timer-lst_day"><%= data.daysObjectsArray[i].weekdayName %></span>: <%= data.daysObjectsArray[i].workedThisDay %>, 
 
-											<%= data.daysObjectsArray[i].overUnder ? 'переработка' : 'недоработка' %> <%= data.daysObjectsArray[i].overUnderText %> 
-											(c <%= data.daysObjectsArray[i].from %> до <%= data.daysObjectsArray[i].to %>)
-											
-
-											<% if(data.daysObjectsArray[i].fake !== true) { %>
-										</div>
+										<%= data.daysObjectsArray[i].overUnder ? 'переработка' : 'недоработка' %> <%= data.daysObjectsArray[i].overUnderText %> 
+										(c <%= data.daysObjectsArray[i].from %> до <%= data.daysObjectsArray[i].to %>)
 										
 
-											<a href="#" class="edit">Редактировать</a>
-
-			
-										<div class="edit-form hide">
-											<form method="POST" action="/editDay/<%= i %>">
-												<div class ="row">
-													<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
-														<input type="hidden" name="username" value="<%= username %>" class="it"/>
-														<input type="text" name="inDate" value="<%= data.daysObjectsArray[i].from %>" class="it"/>
-													</div>
-													<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
-														<% if(data.daysObjectsArray[i].to !== 'сейчас') { %>
-															<input type="text" name="outDate" value="<%= data.daysObjectsArray[i].to %>" class="it"/>
-														<% } %>
-													</div>
-													<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
-														<input type="submit" value="Сохранить" class="btn"/>
-													</div>
-												</div>
-											</form>
-
-										</div>
+										<% if(data.daysObjectsArray[i].fake !== true) { %>
+									</div>
 									
-								</li>
-							</ul>
+
+										<a href="#" class="edit">Редактировать</a>
+
+		
+									<div class="edit-form hide">
+										<form method="POST" action="/editDay/<%= i %>">
+											<div class ="row">
+												<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+													<input type="hidden" name="username" value="<%= username %>" class="it"/>
+													<input type="text" name="inDate" value="<%= data.daysObjectsArray[i].from %>" class="it"/>
+												</div>
+												<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+													<% if(data.daysObjectsArray[i].to !== 'сейчас') { %>
+														<input type="text" name="outDate" value="<%= data.daysObjectsArray[i].to %>" class="it"/>
+													<% } %>
+												</div>
+												<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+													<input type="submit" value="Сохранить" class="btn"/>
+												</div>
+											</div>
+										</form>
+
+									</div>
+									
+	</li>
 							<% } %>
 						<% } %>
-
+							
+						</ul>
 						<br>
 
 						<div class="result">
@@ -115,7 +117,7 @@
 									<form action="/check" method="POST">
 										<input type="hidden" name="username" value="<%= username %>" />
 										<% if(data.daysObjectsArray[data.daysObjectsArray.length - 1].to === 'сейчас') { %>
-											<input type="submit" value="Я ухожу!" />
+											<input type="submit" value="Я ухожу" class="btn"/>
 										<% } else { %>
 											<input type="submit" value="Я пришел!" class="btn"/>
 										<% } %>
@@ -160,7 +162,7 @@
 	</div>
 	<!-- Footer -->
 	<div class="footer">
-		<a href="#" class="copyright">Copyright</a>
+		<a href="#" class="copyright">&copy; Copyright</a>
 	</div>
 	<!-- /Footer -->
 </body>
