@@ -6,29 +6,39 @@
 	<link href='https://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'>
 	<link href='http://codepen.io/mkoloskof/pen/WQeRmW.css' rel='stylesheet'>
 	<link href='stylesheets/grid.css' rel='stylesheet'>
+
+	<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 	<script>
-		var load = function() {
-			var editButtons = document.getElementsByClassName('edit');
-			Array.prototype.forEach.call(editButtons, function(button) {
-				button.addEventListener('click', function(e) {
-					var div = this.parentElement.getElementsByClassName('edit-form')[0];
-					
-					var content = this.textContent;
-					if(content === 'Редактировать') {
-						this.textContent = 'Скрыть';
-						div.className = 'edit-form';
-					}
-					else {
-						this.textContent = 'Редактировать';			
-						div.className = 'edit-form hide';		
-					}
-					
-					e.preventDefault();
-				});
+		$( document ).ready(function() {
+			$('.timer-lst_i').click(function(){
+				$(this).parent('.row').css('background','red');
+				alert('dsds');
+				return false
 			});
-			
-		}
-		setTimeout(load, 0);
+		});
+
+		//var load = function() {
+		//	var editButtons = document.getElementsByClassName('edit');
+		//	Array.prototype.forEach.call(editButtons, function(button) {
+		//		button.addEventListener('click', function(e) {
+		//			var div = this.parentElement.getElementsByClassName('edit-form')[0];
+		//			
+		//			var content = this.textContent;
+		//			if(content === 'Редактировать') {
+		//				this.textContent = 'Скрыть';
+		//				div.className = 'edit-form';
+		//			}
+		//			else {
+		//				this.textContent = 'Редактировать';			
+		//				div.className = 'edit-form hide';		
+		//			}
+		//			
+		//			e.preventDefault();
+		//		});
+		//	});
+		//	
+		//}
+		//setTimeout(load, 0);
 		
 	</script>
 	<style>
@@ -85,7 +95,7 @@
 									</div>
 								</div>
 		
-									<div class="edit-form hide"> <!-- .hide -->
+									<div class="edit-form "> <!-- .hide -->
 										<form method="POST" action="/editDay/<%= i %>">
 											<div class ="row">
 												<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
@@ -105,7 +115,7 @@
 
 									</div>
 									
-	</li>
+								</li>
 							<% } %>
 						<% } %>
 							
