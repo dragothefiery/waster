@@ -10,9 +10,8 @@
 	<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 	<script>
 		$( document ).ready(function() {
-			$('.timer-lst_i').click(function(){
-				$(this).parent('.row').css('background','red');
-				alert('dsds');
+			$('.edit').click(function(){
+				$(this).parent().parent().siblings('.edit-form').toggleClass('hide');
 				return false
 			});
 		});
@@ -95,7 +94,7 @@
 									</div>
 								</div>
 		
-									<div class="edit-form "> <!-- .hide -->
+									<div class="edit-form hide"> <!-- .hide -->
 										<form method="POST" action="/editDay/<%= i %>">
 											<div class ="row">
 												<div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
