@@ -58,13 +58,13 @@ function get(username) {
 			}
 			
 			// Если день длился ровно 8 ч 30 мин, не показываем нулевую переработку/недоработку
-			if(overUnderMinutes != 0) {				
+// 			if(overUnderMinutes != 0) {				
 				if(day.inDate != null) {
 					var from = day.inDate.format('HH:mm');
 					var to = 'сейчас';
 					if(day.outDate != null) to = day.outDate.format('HH:mm');
 				}
-			}
+// 			}
 			daysObjectsArray.push({
 				// День недели (строкой)
 				weekdayName: weekdays[day.day],
@@ -93,6 +93,7 @@ function get(username) {
 			
 			leftMinutes -= day.minutes;
 		});
+		console.log(daysObjectsArray);
 		
 		
 		var latestDay = {
