@@ -12,7 +12,7 @@ function minutesToHuman(minutes) {
 	return hours + ' ч. ' + hoursMinutes + ' мин.';
 }
 
-function g(username) {
+function minutesToString(username) {
 	
 	// Общее количество минут
 	var totalMinutes = WORK_DAY_MINUTES * 5;

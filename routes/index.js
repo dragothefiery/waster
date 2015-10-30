@@ -37,7 +37,8 @@ router.post('/editDay/:dayIndex', function(req, res, next) {
 	var day = moment().startOf('isoweek').add(req.params.dayIndex, 'days')
 	var currentDay = day.format('YYYY-MM-DD');
 
-	var currentIn = day.format('YYYY-MM-DD ' + req.body.inDate + ':00');
+	
+	var currentIn = day.format('YYYY-MM-DD ' + req.body.inDate + ':00+03');
 	sequelize.query("UPDATE work_times SET date = '" + currentIn + "' WHERE user_id = '" + req.body.username + "' AND DATE(date) = '" + currentDay + "' AND direction = 'in'")
 
 	if(req.body.outDate != null) {
@@ -45,7 +46,7 @@ router.post('/editDay/:dayIndex', function(req, res, next) {
 			sequelize.query("DELETE FROM work_times WHERE user_id = '" + req.body.username + "' AND DATE(date) = '" + currentDay + "' AND direction = 'out'")				
 		}
 		else {
-			var currentOut = day.format('YYYY-MM-DD ' + req.body.outDate + ':00');
+			var currentOut = day.format('YYYY-MM-DD ' + req.body.outDate + ':00+03');
 			sequelize.query("UPDATE work_times SET date = '" + currentOut + "' WHERE user_id = '" + req.body.username + "' AND DATE(date) = '" + currentDay + "' AND direction = 'out'");
 		}
 
