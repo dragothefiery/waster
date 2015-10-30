@@ -119,10 +119,16 @@ function get(username) {
 		}
 		
 		// Время рекомендованного конца рабочего дня
-		var recommendedEndOfCurrentDay = latestDay.inDate.add(minutesPerLeftDays, 'minutes');		
+		var recommendedEndOfCurrentDay = latestDay.inDate.add(minutesPerLeftDays, 'minutes');
 		
 		var result = {
 			daysObjectsArray: daysObjectsArray,
+			
+			// Всего переработано/недоработано
+			totalOverUnderTime: totalOverUnderTime,
+			
+			// Всего переработано/недоработано (строка)
+			totalOverUnderTimeString: minutesToHuman(totalOverUnderTime),
 			
 			// Осталось всего
 			left: minutesToHuman(leftMinutes),

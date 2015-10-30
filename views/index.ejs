@@ -122,6 +122,9 @@
 						<br>
 
 						<div class="result">
+							<div class="result_overunder">
+								Общая <%= data.totalOverUnderTime > 0 ? 'переработка' : 'недоработка' %> <%= data.totalOverUnderTimeString %>
+							</div>
 							<div class="result_work">
 								Осталось <%= data.left %> (~ <%= data.leftPerDay %> в день)
 							</div>
