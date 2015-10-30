@@ -92,9 +92,7 @@ function get(username) {
 			});
 			
 			leftMinutes -= day.minutes;
-		});
-		console.log(daysObjectsArray);
-		
+		});		
 		
 		var latestDay = {
 			day: moment(),
@@ -178,7 +176,10 @@ function getRemaining(workTimes) {
 	(1).upto(currentWeekday).forEach(function(weekday, index) {
 		if(weekdays.indexOf(weekday) === -1) {
 			var date = moment().startOf('isoweek').add(weekday, 'days');
-			data.insert({fake: true, day: weekday, minutes: WORK_DAY_MINUTES, inDate: date.hours(9).minutes(0), outDate: date.hours(17).minutes(30)}, index);
+			
+			var inDate = date.clone().hours(9).minutes(0);
+			var outDate = date.clone().hours(17).minutes(30)
+			data.insert({fake: true, day: weekday, minutes: WORK_DAY_MINUTES, inDate: inDate, outDate: outDate}, index);
 		}
 	});
 	
