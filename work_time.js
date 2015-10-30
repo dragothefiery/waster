@@ -203,7 +203,7 @@ function write(username) {
 			lastDirection = 'in';
 		}
 		
-		var query = "INSERT INTO work_times (date, direction, user_id) VALUES ('" + date.format('YYYY-MM-DD HH:mm:ss') +  "', '" + lastDirection + "', '" + username + "')";
+		var query = "INSERT INTO work_times (date, direction, user_id) VALUES ('" + date.format('YYYY-MM-DD HH:mm:ss+03') +  "', '" + lastDirection + "', '" + username + "')";
 		return sequelize.query(query);	
 	});		
 }
