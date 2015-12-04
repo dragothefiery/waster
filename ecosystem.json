@@ -39,7 +39,7 @@
       ref  : "origin/master",
       repo : "https://github.com/dragothefiery/waster.git",
       path : "/usr/local/www/waster",
-      "post-deploy" : "npm install && pm2 startOrRestart ecosystem.json --env production"
+      "post-deploy" : "cp /usr/local/www/waster/shared/.env /usr/local/www/waster/current/.env && npm install && npm start"
     }    
   }
 }
