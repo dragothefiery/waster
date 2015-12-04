@@ -16,10 +16,7 @@
       name      : "waster",
       script    : "./bin/www",
       env: {
-        COMMON_VARIABLE: "true",
-		DB_HOST: "212.71.232.173",
-        DB_USER: "assistant",
-        DB_PASS: "assistant2015"
+        COMMON_VARIABLE: "true"
       },
       env_production : {
         NODE_ENV: "production"
