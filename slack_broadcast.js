@@ -1,4 +1,7 @@
+
+require('dotenv').load();
 var WorkTime = require('./work_time');
+var getRemaining = require('./get_remaining');
 require('sugar');
 var moment = require('moment');
 var sequelize = require('./db');
@@ -26,7 +29,7 @@ function sendToSlack(username, message) {
 	})
 }
 
-sequelize.query('SELECT * FROM subscriptions').spread(function(data) {
+sequelize.query('SELECT * FROM subscriptions WHERE username = \'karpov_s\'').spread(function(data) {
 	data.forEach(function(user) {
 		WorkTime.get(user.username).then(function(remainingData) {
 			console.log(user.slack_username);
@@ -34,14 +37,14 @@ sequelize.query('SELECT * FROM subscriptions').spread(function(data) {
 			var currentDayFinished = false;
 			var currentDay = remainingData.daysObjectsArray.find(function(item) { return item.day === moment().isoWeekday() && item.fake !== true });
 			currentDayFinished = currentDay != null && currentDay.outDate !== 'сейчас';
-// 			console.log(remainingData);
+ 			//console.log(currentDayFinished);
 // 			
 			if(currentDayFinished) {
 				return;				
 			}
 			
 			if(moment().format('HH:mm') === remainingData.recommendedEndDay) {
-// 			if(moment().format('HH:mm') === moment().format('HH:mm')) {
+ 			//if(moment().format('HH:mm') === moment().format('HH:mm')) {
 				var spRecEnd = splitTime(remainingData.recommendedEndDay);
 				spRecEnd = moment().hour(spRecEnd.hour).minutes(spRecEnd.minute);
 // 			
@@ -60,8 +63,8 @@ sequelize.query('SELECT * FROM subscriptions').spread(function(data) {
 				sendToSlack(user.slack_username, message);
 			}
 			
-			if(moment().format('HH:mm') === remainingData.endDay) {	
-// 			if(moment().format('HH:mm') === moment().format('HH:mm')) {
+			if(moment().format('HH:mm') === remainingData.endDay) {
+ 			//if(moment().format('HH:mm') === moment().format('HH:mm')) {
 				sendToSlack(user.slack_username, 'Прошел полный рабочий день, пора домой!');
 			}
 			
