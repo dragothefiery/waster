@@ -29,7 +29,7 @@ function sendToSlack(username, message) {
 	})
 }
 
-sequelize.query('SELECT * FROM subscriptions WHERE username = \'karpov_s\'').spread(function(data) {
+sequelize.query('SELECT * FROM subscriptions').spread(function(data) {
 	data.forEach(function(user) {
 		WorkTime.get(user.username).then(function(remainingData) {
 			console.log(user.slack_username);
