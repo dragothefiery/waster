@@ -33,13 +33,13 @@
    */
   deploy : {
     production : {
-      user : "deployer",
-	  host: "212.71.232.173",
-	  port: "12222",     
+      user : "karpov",
+	  host: "qrealm.tom.ru",
+	  port: "22",     
       ref  : "origin/master",
       repo : "https://github.com/dragothefiery/waster.git",
-      path : "/usr/local/www/waster",
-      "post-deploy" : "cp /usr/local/www/waster/shared/.env /usr/local/www/waster/current/.env && npm install && npm start"
+      path : "/home/karpov/projects/waster",
+      "post-deploy" : "cp /home/karpov/projects/waster/shared/.env /home/karpov/projects/waster/current/.env && npm install && npm start"
     }    
   }
 }
