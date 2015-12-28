@@ -26,7 +26,6 @@ var methods = {
 	}
 };
 
-app.use(webhook(methods));
 
 
 // uncomment after placing your favicon in /public
@@ -36,6 +35,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(webhook(methods));
 
 app.use('/', routes);
 app.use('/users', users);
