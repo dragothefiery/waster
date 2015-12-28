@@ -5,10 +5,9 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var webhook = require('express-ifttt-webhook');
+require('dotenv').load();
 
 var WorkTime = require('./work_time');
-
-require('dotenv').load();
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
@@ -36,7 +35,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-//app.use(webhook(methods));
+app.use(webhook(methods));
 
 app.use('/', routes);
 app.use('/users', users);
