@@ -31,6 +31,7 @@ router.post('/check', function(req, res, next) {
 	WorkTime.write(req.body.username);
 	if(req.params.api) {
 		res.send('ok');
+	}
 	else {
 		res.redirect('/?username=' + req.body.username);		
 	}
