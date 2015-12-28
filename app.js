@@ -36,7 +36,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(webhook(methods));
+//app.use(webhook(methods));
 
 app.use('/', routes);
 app.use('/users', users);
