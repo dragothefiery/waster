@@ -29,7 +29,11 @@ router.get('/', function(req, res) {
 // Отметиться
 router.post('/check', function(req, res, next) {
 	WorkTime.write(req.body.username);
-	res.redirect('/?username=' + req.body.username);		
+	if(req.params.api) {
+		res.send('ok');
+	else {
+		res.redirect('/?username=' + req.body.username);		
+	}
 })
 
 // Редактировать день
