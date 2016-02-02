@@ -8,6 +8,7 @@ var weekdays = ['', 'Понедельник', 'Вторник', 'Среда', '�
 var WORK_DAY_MINUTES = 8.5 * 60;
 
 function minutesToHuman(minutes) {
+	minutes = minutes.abs();
 	var hours = (minutes / 60).floor();
 	var hoursMinutes = minutes % 60;
 	return hours + ' ч. ' + hoursMinutes + ' мин.';
@@ -32,103 +33,150 @@ function get(username) {
 	if(daysPassed > 5) daysPassed = 5;
 	
 	var workTimes = sequelize.query(
-		"SELECT date, direction FROM work_times WHERE user_id = '" + username + "' AND DATE(date) >= '" + startOfWeek + "' ORDER BY date ASC", 
+		"SELECT date, direction FROM work_times WHERE user_id = '" + username + "' AND DATE(date) >= '" + startOfWeek + "' ORDER BY id ASC", 
 		{type: sequelize.QueryTypes.SELECT}
 	);
-
+	
 	return workTimes.then(function(data) {
 		var daysArray = getRemaining(data);
-// 		console.log(daysArray);
 
 		// Массив дней недели и данным по ним
-		var daysObjectsArray = [];
+		var daysObject = {};
 		
 		// Если некоторые дни были пропущены, считаем их как отработанные полный рабочий день
 		leftMinutes -= (daysPassed - daysArray.length) * WORK_DAY_MINUTES;
 		
 		var totalOverUnderTime = 0;
-		
-		daysArray.forEach(function(day) {
-			
-			// Переработка или недоработка
-			var overUnder = day.minutes > WORK_DAY_MINUTES;// ? 'переработка' : 'недоработка';
-			var overUnderMinutes = Math.abs((leftMinutes >= WORK_DAY_MINUTES ? WORK_DAY_MINUTES : leftMinutes) - day.minutes);
-			if(day.outDate != null) {
-				totalOverUnderTime += day.minutes > WORK_DAY_MINUTES ? overUnderMinutes : -overUnderMinutes;				
+		var finishedFn = function(item) { return item.outDate != null; };
+
+		daysArray.forEach(function(dayObject) {
+
+			var totalDayMinutes = dayObject.times.sum(function(item) { return item.minutes; });
+			var totalOverUnder = totalDayMinutes > WORK_DAY_MINUTES;// ? 'переработка' : 'недоработка';
+			var totalOverUnderMinutes = Math.abs((leftMinutes >= WORK_DAY_MINUTES ? WORK_DAY_MINUTES : leftMinutes) - totalDayMinutes);
+			if(dayObject.times.last() && dayObject.times.last().outDate != null) {
+				totalOverUnderTime += totalDayMinutes > WORK_DAY_MINUTES ? totalOverUnderMinutes : -totalOverUnderMinutes;
 			}
-			
-			// Если день длился ровно 8 ч 30 мин, не показываем нулевую переработку/недоработку
-// 			if(overUnderMinutes != 0) {				
+
+			dayObject.times.forEach(function(day) {
+				// Переработка или недоработка
+				var overUnder = day.minutes > WORK_DAY_MINUTES;// ? 'переработка' : 'недоработка';
+				var overUnderMinutes = Math.abs((leftMinutes >= WORK_DAY_MINUTES ? WORK_DAY_MINUTES : leftMinutes) - day.minutes);
+				
+				// Если день длился ровно 8 ч 30 мин, не показываем нулевую переработку/недоработку
 				if(day.inDate != null) {
 					var from = day.inDate.format('HH:mm');
 					var to = 'сейчас';
 					if(day.outDate != null) to = day.outDate.format('HH:mm');
 				}
-// 			}
-			daysObjectsArray.push({
-				// День недели (строкой)
-				weekdayName: weekdays[day.day],
+				if(daysObject[dayObject.day] == null) {
+					daysObject[dayObject.day] = {
+						// Информация о дне
+						day: dayObject.day,
+
+						// День недели (строкой)
+						weekdayName: weekdays[dayObject.day],
+
+						// День заполнен автоматически (не было отметок пользователем)
+						fake: dayObject.fake,
+
+						// Количество минут переработка/недоработки
+						overUnderMinutes: totalOverUnderMinutes,
+
+						// Время недоработки/переработки в тексте
+						overUnderText: minutesToHuman(totalOverUnderMinutes),
+
+						// Сколько отработал за этот день
+						workedThisDay: minutesToHuman(totalDayMinutes),
+
+						// Недоработка или переработка
+						overUnder: totalOverUnder,
+
+						// Информация о времени прихода-ухода
+						times: []
+					}
+				}
+				daysObject[dayObject.day].times.push({
+					
+					// Сколько отработал за этот день
+					workedThisDay: minutesToHuman(day.minutes),
+					
+					// Недоработка или переработка
+					overUnder: overUnder,
+					
+					// Количество минут переработка/недоработки
+					overUnderMinutes: overUnderMinutes,
+					
+					// Время недоработки/переработки в тексте
+					overUnderText: minutesToHuman(overUnderMinutes),
+									
+					// Время прихода (строкой)
+					from: from,
+					
+					// Время ухода (строкой)
+					to: to,
+
+					// Закончен ли этот день
+					finished: day.outDate != null
+				});
 				
-				// Сколько отработал за этот день
-				workedThisDay: minutesToHuman(day.minutes),
-				
-				// Недоработка или переработка
-				overUnder: overUnder,
-				
-				// Количество минут переработка/недоработки
-				overUnderMinutes: overUnderMinutes,
-				
-				// Время недоработки/переработки в тексте
-				overUnderText: minutesToHuman(overUnderMinutes),
-								
-				// Информация о дне
-				day: day,
-				
-				// Время прихода (строкой)
-				from: from,
-				
-				// Время ухода (строкой)
-				to: to
+				leftMinutes -= day.minutes;
 			});
-			
-			leftMinutes -= day.minutes;
-		});		
+			daysObject[dayObject.day].finished = daysObject[dayObject.day].times.last().finished;
+		});
+		daysObject = Object.values(daysObject);
 		
 		var latestDay = {
 			day: moment(),
 			minutes: 0,
-			inDate: moment()
+			times: [
+				{inDate: moment(), minutes: 0}
+			]
 		};
 		if(daysArray.length > 0) latestDay = daysArray[daysArray.length - 1];
-		
-		// Подсчет окончания рабочего дня
-		// Если на неделе осталось отработать больше одного рабочего дня, тогда считаем с учетом того, что уже было отработано сегодня
-		// В противном случае (по пятницам, например), конец дня это сейчас + сколько осталось отработать всего
-// 		var endOfCurrentDay = moment().add((leftMinutes >= WORK_DAY_MINUTES ? WORK_DAY_MINUTES - latestDay.minutes : leftMinutes), 'minutes');
-// 		
-		// Подсчет идеального окончания рабочего дня
-		// Время прихода сегодня + 8 ч 30 мин
-		var endOfCurrentDay = moment(latestDay.inDate).add(WORK_DAY_MINUTES, 'minutes');	
-		
+
+
 		// Количество минут, которые в среднем надо отработать оставшиеся дни в день
+		var minutesPerLeftDays = 0;
+
+		// Сколько всего минут отработано (не считая незавершенное время)
+		var finishedMinutes = latestDay.times.filter(finishedFn).sum(function(item) { return item.minutes });
+
+		// Сколько осталось отработать за сегодня, не считая незавершенное время
+		var leftMinutesToWork = WORK_DAY_MINUTES - finishedMinutes;
+						
 		if(daysArray.length > 0) {
-			var minutesPerLeftDays = WORK_DAY_MINUTES - (totalOverUnderTime / (5 - daysArray.length + 1)).floor();		
+			minutesPerLeftDays = leftMinutesToWork - (totalOverUnderTime / (5 - daysArray.length + 1)).floor();		
 		}
 		else {			
-			var minutesPerLeftDays = WORK_DAY_MINUTES;
+			minutesPerLeftDays = leftMinutesToWork;
 		}
 		
-		// Время рекомендованного конца рабочего дня
-		var recommendedEndOfCurrentDay = latestDay.inDate.add(minutesPerLeftDays, 'minutes');
+		// Подсчет идеального окончания рабочего дня
+		// Время последнего прихода сегодня + 8 ч 30 мин минус все завершенные кусочки времени сегодня
+		var dayAllFinished = latestDay.times.all(finishedFn);
+
+		if(!dayAllFinished) {
+
+			var endOfCurrentDay = moment(latestDay.times.last().inDate).add(leftMinutesToWork, 'minutes');
+			
+			// Время рекомендованного конца рабочего дня
+			var recommendedEndOfCurrentDay = latestDay.times.last().inDate.add(minutesPerLeftDays, 'minutes');
+		}
+
+		if(leftMinutes < 0) leftMinutes = 0;
 		
 		var result = {
-			daysObjectsArray: daysObjectsArray,
+			daysObjectsArray: daysObject,
 			
 			// Всего переработано/недоработано
 			totalOverUnderTime: totalOverUnderTime,
 			
 			// Всего переработано/недоработано (строка)
 			totalOverUnderTimeString: minutesToHuman(totalOverUnderTime),
+
+			// Осталось минут
+			leftMinutes: leftMinutes,
 			
 			// Осталось всего
 			left: minutesToHuman(leftMinutes),
@@ -137,10 +185,10 @@ function get(username) {
 			leftPerDay: minutesToHuman(minutesPerLeftDays),
 			
 			// Идеальный конец рабочего дня
-			endDay: endOfCurrentDay.format('HH:mm'),
+			endDay: (endOfCurrentDay != null ? endOfCurrentDay.format('HH:mm') : ''),
 			
 			// 'Рекомендуемый конец рабочего дня
-			recommendedEndDay: recommendedEndOfCurrentDay.format('HH:mm'),
+			recommendedEndDay: (recommendedEndOfCurrentDay != null ? recommendedEndOfCurrentDay.format('HH:mm') : ''),
 		};
 
 		return result;
@@ -150,24 +198,34 @@ function get(username) {
 // Получить соответствие дня недели и проработанных в этот день минут
 function getRemaining(workTimes) {
 	
+	// Делим объекти на группы по дате
+	var groups = workTimes.groupBy(function(item) {
+		return moment(item.date).format('YYYY-MM-DD');
+	});
+
+    var data = Object.values(groups)
 	// Делим объекты просто на группы по 2 (вход и выход), они в идеале должны чередоваться
-	var groups = workTimes.inGroupsOf(2, {});
-	var data = groups.map(function(group) {
-		
+	.map(function(item) {
+		return item.inGroupsOf(2, {});
+	})
+	.flatten(1)
+	.map(function(group) {
+
 		// Находим объекты входа и выхода
 		var inItem  = group.find(function(item) { return item.direction === 'in'; });
 		var outItem = group.find(function(item) { return item.direction === 'out'; });
 		
-		var inDate = moment(inItem.date);
+		var inDate = moment(inItem.date);			
 				
 		// Если не было выхода, считаем его как сейчас
 		if(outItem == null) {
-			return {day: inDate.isoWeekday(), minutes: moment().diff(inDate, 'minutes'), inDate: inDate};
+			return {fake: false, day: inDate.isoWeekday(), minutes: moment().diff(inDate, 'minutes'), inDate: inDate};
 		}
 		
 		var outDate = moment(outItem.date);
 		
 		return {
+			fake: false,
 			day: inDate.isoWeekday(),
 			minutes: outDate.diff(inDate, 'minutes'),
 			inDate: inDate,
@@ -180,7 +238,7 @@ function getRemaining(workTimes) {
 	
 	// Заполняем пропущенные дни значениями по умолчанию
 	(1).upto(currentWeekday).forEach(function(weekday, index) {
-		if(weekdays.indexOf(weekday) === -1) {
+		if(weekdays.indexOf(weekday) === -1 && weekday != 6 && weekday != 7) {
 			var date = moment().startOf('isoweek').add(weekday, 'days');
 			
 			var inDate = date.clone().hours(9).minutes(0);
@@ -189,13 +247,30 @@ function getRemaining(workTimes) {
 		}
 	});
 	
+	data = data.groupBy(function(item) {
+		return item.day;
+	});
+	data = Object.values(data).map(function(item) {
+		return {
+			fake: item[0].fake,
+			day: item[0].day,
+			times: item.map(function(time) {
+				return {
+					minutes: time.minutes,
+					inDate: time.inDate,
+					outDate: time.outDate
+				};
+			})
+		};
+	});
 	return data;
 };
+
 function write(username) {
 	
 	var date = moment();
 	
-	return sequelize.query("SELECT * FROM work_times WHERE DATE(date) = '" + date.format('YYYY-MM-DD') + "' AND user_id = '" + username + "'")
+	return sequelize.query("SELECT * FROM work_times WHERE DATE(date) = '" + date.format('YYYY-MM-DD') + "' AND user_id = '" + username + "' ORDER BY id ASC")
 	.spread(function(result) {
 		
 		var lastDirection = 'out';
@@ -229,7 +304,6 @@ function subscribe(username, slackUsername) {
 		})
 	})	
 }
-
 module.exports.get = get;
 module.exports.subscribe = subscribe;
 module.exports.write = write;

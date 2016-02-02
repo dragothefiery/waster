@@ -12,15 +12,10 @@ router.get('/', function(req, res) {
 		}
 		WorkTime.get(req.query.username).then(function(data) {
 			sequelize.query("SELECT * FROM subscriptions WHERE username = '" + req.query.username + "'").spread(function(subscription) {
-				
-				var currentDayFinished = false;
-				var currentDay = data.daysObjectsArray.find(function(item) { return item.day === moment().isoWeekday() && item.fake !== true });
-				currentDayFinished = currentDay != null && currentDay.to !== 'сейчас';
 				res.render('index', {
 					data: data,
 					subscription: subscription.length > 0 ? subscription[0] : null,
-					username: req.query.username,
-					currentDayFinished: currentDayFinished
+					username: req.query.username
 				});
 			})
 		});		
@@ -28,13 +23,14 @@ router.get('/', function(req, res) {
 
 // Отметиться
 router.post('/check', function(req, res, next) {
-	WorkTime.write(req.body.username);
-	if(req.params.api) {
-		res.send('ok');
-	}
-	else {
-		res.redirect('/?username=' + req.body.username);		
-	}
+	WorkTime.write(req.body.username).finally(function() {;
+		if(req.params.api) {
+			res.send('ok');
+		}
+		else {
+			res.redirect('/?username=' + req.body.username);		
+		}
+	});
 })
 
 // Редактировать день
@@ -43,21 +39,40 @@ router.post('/editDay/:dayIndex', function(req, res, next) {
 	var currentDay = day.format('YYYY-MM-DD');
 
 	
-	var currentIn = day.format('YYYY-MM-DD ' + req.body.inDate + ':00+03');
-	sequelize.query("UPDATE work_times SET date = '" + currentIn + "' WHERE user_id = '" + req.body.username + "' AND DATE(date) = '" + currentDay + "' AND direction = 'in'")
+	var promises = req.body.dates.map(function(date, i) {
+		var selectSql = "SELECT id FROM work_times WHERE DATE(date) = '" + currentDay + "' AND user_id = '" + req.body.username + "' ORDER BY id ASC LIMIT 2 OFFSET " + i * 2;
+		return sequelize.query(selectSql)
+		.spread(function(response) {
+			return {				
+				inId: response[0] != null ? response[0].id : null,
+				outId: response[1] != null ? response[1].id : null
+			}
+		}).then(function(ids) {
+			
+			if(ids.inId != null) {
+				if(date.inDate === '') {
+					sequelize.query("DELETE FROM work_times WHERE id = " + ids.inId);
+				}
+				else {
+					var currentIn = day.format('YYYY-MM-DD ' + date.inDate + ':00+03');
+					sequelize.query("UPDATE work_times SET date = '" + currentIn + "' WHERE id = " + ids.inId);
+				}
+			}
+			if(date.outDate != null && ids.outId != null) {
+				if(date.outDate === '') {
+					sequelize.query("DELETE FROM work_times WHERE id = " + ids.outId);
+				}
+				else {
+					var currentOut = day.format('YYYY-MM-DD ' + date.outDate + ':00+03');
+					sequelize.query("UPDATE work_times SET date = '" + currentOut + "' WHERE id = " + ids.outId);
+				}
+			}
+		});
+	});
+	q.all(promises).then(function() {		
+		res.redirect('/?username=' + req.body.username);		
+	}).done();
 
-	if(req.body.outDate != null) {
-		if(req.body.outDate === '') {
-			sequelize.query("DELETE FROM work_times WHERE user_id = '" + req.body.username + "' AND DATE(date) = '" + currentDay + "' AND direction = 'out'")				
-		}
-		else {
-			var currentOut = day.format('YYYY-MM-DD ' + req.body.outDate + ':00+03');
-			sequelize.query("UPDATE work_times SET date = '" + currentOut + "' WHERE user_id = '" + req.body.username + "' AND DATE(date) = '" + currentDay + "' AND direction = 'out'");
-		}
-
-	}
-
-	res.redirect('/?username=' + req.body.username);		
 })
 
 router.post('/subscribe', function(req, res, next) {

@@ -29,56 +29,82 @@ function minutesToString(username) {
 
  	// Не учитываем выходные
 	if(daysPassed > 5) daysPassed = 5;
+
+	var q = require('q');
+	var workTimes = q();
 	
-	var workTimes = sequelize.query(
-		"SELECT date, direction FROM work_times WHERE user_id = '" + username + "' AND DATE(date) >= '" + startOfWeek + "' ORDER BY date ASC", 
-		{type: sequelize.QueryTypes.SELECT}
-	);
+	//var workTimes = sequelize.query(
+		//"SELECT date, direction FROM work_times WHERE user_id = '" + username + "' AND DATE(date) >= '" + startOfWeek + "' ORDER BY date ASC", 
+		//{type: sequelize.QueryTypes.SELECT}
+	//);
+
+	var datas = [
+		{date: '2016-01-20 11:00:00', direction: 'in'},
+		{date: '2016-01-20 19:30:00', direction: 'out'},
+		{date: '2016-01-21 11:00:00', direction: 'in'},
+		{date: '2016-01-21 14:00:00', direction: 'out'},
+		{date: '2016-01-21 14:30:00', direction: 'in'},
+		{date: '2016-01-21 16:00:00', direction: 'out'},
+		{date: '2016-01-22 11:00:00', direction: 'in'},
+		{date: '2016-01-22 19:30:00', direction: 'out'},
+	];
 
 	return workTimes.then(function(data) {
-		var daysArray = getRemaining(data);
+		var daysArray = getRemaining(datas);
 // 		console.log(daysArray);
 
 		// Массив дней недели и данным по ним
-		var daysObjectsArray = [];
+		var daysObject = {};
 		
 		// Если некоторые дни были пропущены, считаем их как отработанные полный рабочий день
 		leftMinutes -= (daysPassed - daysArray.length) * WORK_DAY_MINUTES;
 		
 		var totalOverUnderTime = 0;
 		
-		daysArray.forEach(function(day) {
+		daysArray.forEach(function(dayObject) {
 			
 			// Переработка или недоработка
-			var overUnder = day.minutes > WORK_DAY_MINUTES ? 'переработка' : 'недоработка';
-			var overUnderMinutes = Math.abs((leftMinutes >= WORK_DAY_MINUTES ? WORK_DAY_MINUTES : leftMinutes) - day.minutes);
-			if(day.outDate != null) {
-				totalOverUnderTime += day.minutes > WORK_DAY_MINUTES ? overUnderMinutes : -overUnderMinutes;				
-			}			
-			
-			var str = weekdays[day.day] + ': ' + minutesToHuman(day.minutes);
-			
-			// Если день длился ровно 8 ч 30 мин, не показываем нулевую переработку/недоработку
-			if(overUnderMinutes != 0) {
-				str += ', ' + overUnder + ' ' + minutesToHuman(overUnderMinutes);
+
+			dayObject.times.forEach(function(day) {
+				var overUnder = day.minutes > WORK_DAY_MINUTES ? 'переработка' : 'недоработка';
+				var overUnderMinutes = Math.abs((leftMinutes >= WORK_DAY_MINUTES ? WORK_DAY_MINUTES : leftMinutes) - day.minutes);
+				if(day.outDate != null) {
+					totalOverUnderTime += day.minutes > WORK_DAY_MINUTES ? overUnderMinutes : -overUnderMinutes;				
+				}			
 				
-				if(day.inDate != null) {
-					var from = day.inDate.format('HH:mm');
-					var to = 'сейчас';
-					if(day.outDate != null) to = day.outDate.format('HH:mm');
-					str += ' (с ' + from + ' до ' + to + ')';
+				var str = weekdays[dayObject.day] + ': ' + minutesToHuman(day.minutes);
+				
+				// Если день длился ровно 8 ч 30 мин, не показываем нулевую переработку/недоработку
+				if(overUnderMinutes != 0) {
+					str += ', ' + overUnder + ' ' + minutesToHuman(overUnderMinutes);
+					
+					if(day.inDate != null) {
+						var from = day.inDate.format('HH:mm');
+						var to = 'сейчас';
+						if(day.outDate != null) to = day.outDate.format('HH:mm');
+						str += ' (с ' + from + ' до ' + to + ')';
+					}
 				}
-			}
-			daysObjectsArray.push({
-				str: str,
-				inDate: from,
-				outDate: to,
-				day: day.day,
-				fake: day.fake
+
+				if(daysObject[dayObject.day] == null) {
+					daysObject[dayObject.day] = {
+						day: dayObject.day,
+						fake: dayObject.fake,
+						times: []
+					}
+				}
+				daysObject[dayObject.day].times.push({
+					str: str,
+					inDate: from,
+					outDate: to,
+				});
+				
+				leftMinutes -= day.minutes;
 			});
-			
-			leftMinutes -= day.minutes;
 		});
+
+		daysObject = Object.values(daysObject).map(function(item) {return item.times});
+		console.log(daysObject);
 		
 		
 		var latestDay = {
@@ -132,24 +158,34 @@ function minutesToString(username) {
 // Получить соответствие дня недели и проработанных в этот день минут
 function getRemaining(workTimes) {
 	
+	// Делим объекти на группы по дате
+	var groups = workTimes.groupBy(function(item) {
+		return moment(item.date).format('YYYY-MM-DD');
+	});
+
+    var data = Object.values(groups)
 	// Делим объекты просто на группы по 2 (вход и выход), они в идеале должны чередоваться
-	var groups = workTimes.inGroupsOf(2, {});
-	var data = groups.map(function(group) {
+	.map(function(item) {
+		return item.inGroupsOf(2, {});
+	})
+	.flatten(1)
+	.map(function(group) {
 		
 		// Находим объекты входа и выхода
 		var inItem  = group.find(function(item) { return item.direction === 'in'; });
 		var outItem = group.find(function(item) { return item.direction === 'out'; });
 		
-		var inDate = moment(inItem.date);
+		var inDate = moment(inItem.date);			
 				
 		// Если не было выхода, считаем его как сейчас
 		if(outItem == null) {
-			return {day: inDate.isoWeekday(), minutes: moment().diff(inDate, 'minutes'), inDate: inDate};
+			return {fake: false, day: inDate.isoWeekday(), minutes: moment().diff(inDate, 'minutes'), inDate: inDate};
 		}
 		
 		var outDate = moment(outItem.date);
 		
 		return {
+			fake: false,
 			day: inDate.isoWeekday(),
 			minutes: outDate.diff(inDate, 'minutes'),
 			inDate: inDate,
@@ -164,12 +200,35 @@ function getRemaining(workTimes) {
 	(1).upto(currentWeekday).forEach(function(weekday, index) {
 		if(weekdays.indexOf(weekday) === -1) {
 			var date = moment().startOf('isoweek').add(weekday, 'days');
-			data.insert({fake: true, day: weekday, minutes: WORK_DAY_MINUTES, inDate: date.hours(9).minutes(0), outDate: date.hours(17).minutes(30)}, index);
+			
+			var inDate = date.clone().hours(9).minutes(0);
+			var outDate = date.clone().hours(17).minutes(30)
+			data.insert({fake: true, day: weekday, minutes: WORK_DAY_MINUTES, inDate: inDate, outDate: outDate}, index);
 		}
 	});
 	
+	data = data.groupBy(function(item) {
+		return item.day;
+	});
+	data = Object.values(data).map(function(item) {
+		return {
+			fake: item[0].fake,
+			day: item[0].day,
+			times: item.map(function(time) {
+				return {
+					minutes: time.minutes,
+					inDate: time.inDate,
+					outDate: time.outDate
+				};
+			})
+		};
+	});
 	return data;
 };
+
+minutesToString('karpov_s').then(function(res) {
+	console.log(res);
+});
 
 module.exports = minutesToString;
 module.exports.minutesToHuman = minutesToHuman;
