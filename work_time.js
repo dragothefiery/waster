@@ -14,7 +14,12 @@ function minutesToHuman(minutes) {
 	return hours + ' ч. ' + hoursMinutes + ' мин.';
 }
 
-function get(username) {
+function get(username, date) {
+
+	var relativeDate = moment();
+	if(date != null) {
+		relativeDate = moment(date);
+	}
 	
 	// Общее количество минут
 	var totalMinutes = WORK_DAY_MINUTES * 5;

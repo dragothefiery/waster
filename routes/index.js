@@ -8,17 +8,19 @@ var q = require('q');
 // Главная страница
 router.get('/', function(req, res) {
 	if(!req.query.username) {
-			return res.send('No username')
-		}
-		WorkTime.get(req.query.username).then(function(data) {
-			sequelize.query("SELECT * FROM subscriptions WHERE username = '" + req.query.username + "'").spread(function(subscription) {
-				res.render('index', {
-					data: data,
-					subscription: subscription.length > 0 ? subscription[0] : null,
-					username: req.query.username
-				});
-			})
-		});		
+		return res.send('No username');
+	}
+	var date = req.query.date;
+	var username = req.query.username;
+	WorkTime.get(username, date).then(function(data) {
+		sequelize.query("SELECT * FROM subscriptions WHERE username = '" + username + "'").spread(function(subscription) {
+			res.render('index', {
+				data: data,
+				subscription: subscription.length > 0 ? subscription[0] : null,
+				username: username
+			});
+		})
+	});		
 });
 
 // Отметиться
