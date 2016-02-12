@@ -71,8 +71,8 @@ function get(username, date, countLastWeek) {
 		var totalPerLastWeek = null;
 		// Если считаем прошлую неделю, то от оставшихся минут отнимаем то, что осталось на прошлой неделе
 		if(prevWeekData) {
-			var totalPerLastWeek = prevWeekData.leftMinutes + (prevWeekData.prevWeekTime != null ? prevWeekData.prevWeekTime : 0);
-			console.log(totalPerLastWeek);
+			totalPerLastWeek = prevWeekData.leftMinutes + (prevWeekData.prevWeekTime != null ? prevWeekData.prevWeekTime : 0);
+			//console.log(totalPerLastWeek);
 			leftMinutes += totalPerLastWeek;
 			totalOverUnderTime -= totalPerLastWeek;
 		}
@@ -223,7 +223,10 @@ function get(username, date, countLastWeek) {
 			recommendedEndDay: (recommendedEndOfCurrentDay != null ? recommendedEndOfCurrentDay.format('HH:mm') : ''),
 
 			// Лишнее время на прошлой неделе
-			prevWeekTime: totalPerLastWeek
+			prevWeekTime: prevWeekData != null ? prevWeekData.prevWeekTime : null,
+
+			// Всего лишнее время за все прошлые недели
+			totalPerLastWeek: totalPerLastWeek
 		};
 
 		return result;
