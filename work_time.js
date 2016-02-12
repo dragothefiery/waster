@@ -66,12 +66,13 @@ function get(username, date, countLastWeek) {
 		// Если некоторые дни были пропущены, считаем их как отработанные полный рабочий день
 		leftMinutes -= (daysPassed - daysArray.length) * WORK_DAY_MINUTES;
 
+		var totalOverUnderTime = 0;
+
 		// Если считаем прошлую неделю, то от оставшихся минут отнимаем то, что осталось на прошлой неделе
 		if(prevWeekData) {
 			leftMinutes += prevWeekData.leftMinutes;
+			totalOverUnderTime -= prevWeekData.leftMinutes;
 		}
-
-		var totalOverUnderTime = 0;
 		var finishedFn = function(item) { return item.outDate != null; };
 
 		daysArray.forEach(function(dayObject) {
