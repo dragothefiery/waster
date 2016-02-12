@@ -1,6 +1,6 @@
 require('sugar');
 var moment = require('moment');
-var sequelize = require('./db');
+var sequelize = require('./db')();
 var q = require('q');
 
 var weekdays = ['', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
@@ -14,11 +14,22 @@ function minutesToHuman(minutes) {
 	return hours + ' ч. ' + hoursMinutes + ' мин.';
 }
 
-function get(username, date) {
+function get(username, date, countLastWeek) {
+
+	if(countLastWeek == null) {
+		countLastWeek = true;
+	}
 
 	var relativeDate = moment();
 	if(date != null) {
 		relativeDate = moment(date);
+	}
+
+	var prevWeek = null;
+	if(countLastWeek) {		
+		// Начало прошлой недели, чтобы можно было высчитать время переработки за прошлую неделю
+		var endOfPrevWeek = relativeDate.clone().startOf('isoweek').subtract(1, 'day').endOf('isoweek').format('YYYY-MM-DD');
+		prevWeek = get(username, endOfPrevWeek, false);
 	}
 	
 	// Общее количество минут
@@ -28,39 +39,50 @@ function get(username, date) {
 	var leftMinutes = totalMinutes;
 	
 	// Берем время работы с начала недели
-	var startOfWeek = moment().startOf('isoweek').format('YYYY-MM-DD');
+	var startOfWeek = relativeDate.clone().startOf('isoweek').format('YYYY-MM-DD');
+
+	// Конец недели
+	var endOfWeek = relativeDate.clone().endOf('isoweek').format('YYYY-MM-DD');
 	
 	// Количество прошедших дней с начала недели = номеру сегодняшнего дня недели
-	var daysPassed = moment().isoWeekday();
-// 	var daysPassed = 4;
-
+	var daysPassed = relativeDate.isoWeekday();
+	
  	// Не учитываем выходные
 	if(daysPassed > 5) daysPassed = 5;
 	
 	var workTimes = sequelize.query(
-		"SELECT date, direction FROM work_times WHERE user_id = '" + username + "' AND DATE(date) >= '" + startOfWeek + "' ORDER BY id ASC", 
+		"SELECT date, direction FROM work_times WHERE user_id = '" + username + "' AND DATE(date) >= '" + startOfWeek + "' AND DATE(date) <= '" + endOfWeek + "' ORDER BY id ASC", 
 		{type: sequelize.QueryTypes.SELECT}
 	);
 	
-	return workTimes.then(function(data) {
-		var daysArray = getRemaining(data);
+	return q.all([workTimes, prevWeek]).then(function(array) {
+		var data = array[0];
+		var prevWeekData = array[1];
+		var daysArray = getRemaining(data, relativeDate);
 
 		// Массив дней недели и данным по ним
 		var daysObject = {};
 		
 		// Если некоторые дни были пропущены, считаем их как отработанные полный рабочий день
 		leftMinutes -= (daysPassed - daysArray.length) * WORK_DAY_MINUTES;
-		
+
+		// Если считаем прошлую неделю, то от оставшихся минут отнимаем то, что осталось на прошлой неделе
+		if(prevWeekData) {
+			leftMinutes += prevWeekData.leftMinutes;
+		}
+
 		var totalOverUnderTime = 0;
 		var finishedFn = function(item) { return item.outDate != null; };
 
 		daysArray.forEach(function(dayObject) {
 
+			// Сколько реально осталось работать в данный день. В последний день обычно меньше, если есть переработки
+			var reallyLeft = (leftMinutes >= WORK_DAY_MINUTES ? WORK_DAY_MINUTES : leftMinutes);
 			var totalDayMinutes = dayObject.times.sum(function(item) { return item.minutes; });
-			var totalOverUnder = totalDayMinutes > WORK_DAY_MINUTES;// ? 'переработка' : 'недоработка';
-			var totalOverUnderMinutes = Math.abs((leftMinutes >= WORK_DAY_MINUTES ? WORK_DAY_MINUTES : leftMinutes) - totalDayMinutes);
+			var totalOverUnder = totalDayMinutes > reallyLeft;// ? 'переработка' : 'недоработка';
+			var totalOverUnderMinutes = Math.abs(reallyLeft - totalDayMinutes);
 			if(dayObject.times.last() && dayObject.times.last().outDate != null) {
-				totalOverUnderTime += totalDayMinutes > WORK_DAY_MINUTES ? totalOverUnderMinutes : -totalOverUnderMinutes;
+				totalOverUnderTime += totalDayMinutes > reallyLeft ? totalOverUnderMinutes : -totalOverUnderMinutes;
 			}
 
 			dayObject.times.forEach(function(day) {
@@ -169,7 +191,8 @@ function get(username, date) {
 			var recommendedEndOfCurrentDay = latestDay.times.last().inDate.add(minutesPerLeftDays, 'minutes');
 		}
 
-		if(leftMinutes < 0) leftMinutes = 0;
+		
+		//if(leftMinutes < 0) leftMinutes = 0;
 		
 		var result = {
 			daysObjectsArray: daysObject,
@@ -194,6 +217,9 @@ function get(username, date) {
 			
 			// 'Рекомендуемый конец рабочего дня
 			recommendedEndDay: (recommendedEndOfCurrentDay != null ? recommendedEndOfCurrentDay.format('HH:mm') : ''),
+
+			// Лишнее время на прошлой неделе
+			prevWeekTime: prevWeekData ? prevWeekData.leftMinutes : null
 		};
 
 		return result;
@@ -201,8 +227,10 @@ function get(username, date) {
 };
 
 // Получить соответствие дня недели и проработанных в этот день минут
-function getRemaining(workTimes) {
-	
+// @param workTimes сырой список заходов и уходов из бд
+// @param relativeDate дата относительно которой ведутся рассчеты
+function getRemaining(workTimes, relativeDate) {
+
 	// Делим объекти на группы по дате
 	var groups = workTimes.groupBy(function(item) {
 		return moment(item.date).format('YYYY-MM-DD');
@@ -221,10 +249,11 @@ function getRemaining(workTimes) {
 		var outItem = group.find(function(item) { return item.direction === 'out'; });
 		
 		var inDate = moment(inItem.date);			
-				
+		
+
 		// Если не было выхода, считаем его как сейчас
 		if(outItem == null) {
-			return {fake: false, day: inDate.isoWeekday(), minutes: moment().diff(inDate, 'minutes'), inDate: inDate};
+			return {fake: false, day: inDate.isoWeekday(), minutes: relativeDate.diff(inDate, 'minutes'), inDate: inDate};
 		}
 		
 		var outDate = moment(outItem.date);
@@ -309,6 +338,20 @@ function subscribe(username, slackUsername) {
 		})
 	})	
 }
+
+// Нужно чтобы легко тестировать модуль отдельно от веб странички
+if(!module.parent) {
+	require('dotenv').load();
+	sequelize = require('./db')();
+
+	// Начало прошлой недели, чтобы можно было высчитать время переработки за прошлую неделю
+	var endOfPrevWeek = moment().startOf('isoweek').subtract(1, 'day').endOf('isoweek').format('YYYY-MM-DD');
+
+	get('karpov_s', endOfPrevWeek).then(function(res) {
+		console.log(res);
+	}).done();
+}
+
 module.exports.get = get;
 module.exports.subscribe = subscribe;
 module.exports.write = write;

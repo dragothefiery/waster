@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var WorkTime = require('./../work_time');
-var sequelize = require('./../db');
+var sequelize = require('./../db')();
 var moment = require('moment');
 var q = require('q');
 
@@ -20,7 +20,7 @@ router.get('/', function(req, res) {
 				username: username
 			});
 		})
-	});		
+	}).done();
 });
 
 // Отметиться

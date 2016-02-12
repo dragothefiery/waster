@@ -131,6 +131,8 @@
 							<% if(data.leftMinutes != 0) { %>
 								<div class="result_work">
 									Осталось <%= data.left %> (~ <%= data.leftPerDay %> в день)
+									<br>
+									На прошлой неделе <% if(data.prevWeekTime < 0) { %>переработано<% } else { %>недоработано<% } %> <%= Math.abs(data.prevWeekTime) %> мин.
 								</div>
 							<% } %>
 
