@@ -13,7 +13,7 @@ router.get('/', function(req, res) {
 	var date = req.query.date;
 	var username = req.query.username;
 	var countLastWeek = req.query.last;
-	if(!countLastWeek) countLastWeek = false;
+	if(!countLastWeek) countLastWeek = 0;
 	WorkTime.get(username, date, countLastWeek).then(function(data) {
 		sequelize.query("SELECT * FROM subscriptions WHERE username = '" + username + "'").spread(function(subscription) {
 			res.render('index', {

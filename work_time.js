@@ -17,7 +17,7 @@ function minutesToHuman(minutes) {
 function get(username, date, countLastWeek) {
 
 	if(countLastWeek == null) {
-		countLastWeek = true;
+		countLastWeek = 1;
 	}
 
 	var relativeDate = moment();
@@ -26,10 +26,10 @@ function get(username, date, countLastWeek) {
 	}
 
 	var prevWeek = null;
-	if(countLastWeek) {		
+	if(countLastWeek > 0) {		
 		// Начало прошлой недели, чтобы можно было высчитать время переработки за прошлую неделю
 		var endOfPrevWeek = relativeDate.clone().startOf('isoweek').subtract(1, 'day').endOf('isoweek').format('YYYY-MM-DD');
-		prevWeek = get(username, endOfPrevWeek, false);
+		prevWeek = get(username, endOfPrevWeek, countLastWeek - 1);
 	}
 	
 	// Общее количество минут
@@ -68,10 +68,13 @@ function get(username, date, countLastWeek) {
 
 		var totalOverUnderTime = 0;
 
+		var totalPerLastWeek = null;
 		// Если считаем прошлую неделю, то от оставшихся минут отнимаем то, что осталось на прошлой неделе
 		if(prevWeekData) {
-			leftMinutes += prevWeekData.leftMinutes;
-			totalOverUnderTime -= prevWeekData.leftMinutes;
+			var totalPerLastWeek = prevWeekData.leftMinutes + (prevWeekData.prevWeekTime != null ? prevWeekData.prevWeekTime : 0);
+			console.log(totalPerLastWeek);
+			leftMinutes += totalPerLastWeek;
+			totalOverUnderTime -= totalPerLastWeek;
 		}
 		var finishedFn = function(item) { return item.outDate != null; };
 
@@ -220,7 +223,7 @@ function get(username, date, countLastWeek) {
 			recommendedEndDay: (recommendedEndOfCurrentDay != null ? recommendedEndOfCurrentDay.format('HH:mm') : ''),
 
 			// Лишнее время на прошлой неделе
-			prevWeekTime: prevWeekData ? prevWeekData.leftMinutes : null
+			prevWeekTime: totalPerLastWeek
 		};
 
 		return result;
