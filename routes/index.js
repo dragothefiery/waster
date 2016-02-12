@@ -12,14 +12,15 @@ router.get('/', function(req, res) {
 	}
 	var date = req.query.date;
 	var username = req.query.username;
-	var countLastWeek = req.query.last;
-	if(!countLastWeek) countLastWeek = 0;
-	WorkTime.get(username, date, countLastWeek).then(function(data) {
+	var last = +req.query.last;
+	if(!last || isNaN(last)) last = 0;
+	WorkTime.get(username, date, last).then(function(data) {
 		sequelize.query("SELECT * FROM subscriptions WHERE username = '" + username + "'").spread(function(subscription) {
 			res.render('index', {
 				data: data,
 				subscription: subscription.length > 0 ? subscription[0] : null,
-				username: username
+				username: username,
+				last: last
 			});
 		})
 	}).done();
