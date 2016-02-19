@@ -3,6 +3,8 @@ var moment = require('moment');
 var sequelize = require('./db')();
 var q = require('q');
 
+var specialWeeks = require('./special');
+
 var weekdays = ['', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
 var WORK_DAY_MINUTES = 8.5 * 60;
@@ -31,9 +33,17 @@ function get(username, date, countLastWeek) {
 		var endOfPrevWeek = relativeDate.clone().startOf('isoweek').subtract(1, 'day').endOf('isoweek').format('YYYY-MM-DD');
 		prevWeek = get(username, endOfPrevWeek, countLastWeek - 1);
 	}
+
+	// Количество рабочих дней на этой неделе
+	var workingDays = 6;
 	
+	var relativeFormattedDate = relativeDate.format('YYYY-MM-DD');
+	if(Object.keys(specialWeeks).indexOf(relativeDate.format('YYYY-MM-DD')) !== -1) {
+		workingDays = specialWeeks[relativeFormattedDate];
+	}
+
 	// Общее количество минут
-	var totalMinutes = WORK_DAY_MINUTES * 5;
+	var totalMinutes = WORK_DAY_MINUTES * workingDays;
 	
 	// Сколько минут осталось
 	var leftMinutes = totalMinutes;
@@ -48,7 +58,7 @@ function get(username, date, countLastWeek) {
 	var daysPassed = relativeDate.isoWeekday();
 	
  	// Не учитываем выходные
-	if(daysPassed > 5) daysPassed = 5;
+	if(daysPassed > workingDays) daysPassed = workingDays;
 	
 	var workTimes = sequelize.query(
 		"SELECT date, direction FROM work_times WHERE user_id = '" + username + "' AND DATE(date) >= '" + startOfWeek + "' AND DATE(date) <= '" + endOfWeek + "' ORDER BY id ASC", 
@@ -177,7 +187,7 @@ function get(username, date, countLastWeek) {
 		var leftMinutesToWork = WORK_DAY_MINUTES - finishedMinutes;
 						
 		if(daysArray.length > 0) {
-			minutesPerLeftDays = leftMinutesToWork - (totalOverUnderTime / (5 - daysArray.length + 1)).floor();		
+			minutesPerLeftDays = leftMinutesToWork - (totalOverUnderTime / (workingDays - daysArray.length + 1)).floor();		
 		}
 		else {			
 			minutesPerLeftDays = leftMinutesToWork;
