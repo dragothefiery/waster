@@ -16,12 +16,17 @@ router.get('/', function(req, res) {
 	if(!last || isNaN(last)) last = 0;
 	WorkTime.get(username, date, last).then(function(data) {
 		sequelize.query("SELECT * FROM subscriptions WHERE username = '" + username + "'").spread(function(subscription) {
-			res.render('index', {
-				data: data,
-				subscription: subscription.length > 0 ? subscription[0] : null,
-				username: username,
-				last: last
-			});
+			if(req.query.api) {
+				return res.json(data);
+			}
+			else {
+				res.render('index', {
+					data: data,
+					subscription: subscription.length > 0 ? subscription[0] : null,
+					username: username,
+					last: last
+				});
+			}
 		})
 	}).done();
 });
