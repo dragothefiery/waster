@@ -1,6 +1,6 @@
 require('sugar');
 require('dotenv').load();
-var sequelize = require('./db');
+var sequelize = require('./db')();
 var moment = require('moment');
 
 //date = moment('2016-02-04')
