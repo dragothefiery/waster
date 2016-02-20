@@ -3,11 +3,18 @@ var moment = require('moment');
 var sequelize = require('./db')();
 var q = require('q');
 
-var specialWeeks = require('./special');
+var specialWeeks = require('./special').weeks;
+var specialDays = require('./special').days;
 
 var weekdays = ['', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
 
-var WORK_DAY_MINUTES = 8.5 * 60;
+function getWorkingDayMinutes(date) {
+	var specialWorkingHours = specialDays[date];
+	if(specialWorkingHours == null) {
+		specialWorkingHours = 8.5;
+	}
+	return specialWorkingHours * 60;
+}
 
 function minutesToHuman(minutes) {
 	minutes = minutes.abs();
@@ -26,6 +33,21 @@ function get(username, date, countLastWeek) {
 	if(date != null) {
 		relativeDate = moment(date);
 	}
+	
+	
+	var countTotalMinutes = function(weekLength) {
+		var startOfCurrentWeek = relativeDate.clone().startOf('isoweek');
+		var endOfCurrentWeek = startOfCurrentWeek.clone().add(weekLength, 'days');
+
+		var minutes = 0;
+		while(startOfCurrentWeek.diff(endOfCurrentWeek, 'days') !== 0) {
+			var currDay = startOfCurrentWeek.format('YYYY-MM-DD');
+			var specialWorkingHours = getWorkingDayMinutes(currDay);
+			minutes += specialWorkingHours;
+			startOfCurrentWeek.add(1, 'day');
+		}
+		return minutes;
+	}
 
 	var prevWeek = null;
 	if(countLastWeek > 0) {		
@@ -35,15 +57,15 @@ function get(username, date, countLastWeek) {
 	}
 
 	// Количество рабочих дней на этой неделе
-	var workingDays = 6;
-	
-	var relativeFormattedDate = relativeDate.format('YYYY-MM-DD');
-	if(Object.keys(specialWeeks).indexOf(relativeDate.format('YYYY-MM-DD')) !== -1) {
+	var workingDays = 5;
+
+	var relativeFormattedDate = relativeDate.clone().endOf('isoweek').format('YYYY-MM-DD');
+	if(Object.keys(specialWeeks).indexOf(relativeFormattedDate) !== -1) {
 		workingDays = specialWeeks[relativeFormattedDate];
 	}
-
+	
 	// Общее количество минут
-	var totalMinutes = WORK_DAY_MINUTES * workingDays;
+	var totalMinutes = countTotalMinutes(workingDays);
 	
 	// Сколько минут осталось
 	var leftMinutes = totalMinutes;
@@ -74,7 +96,7 @@ function get(username, date, countLastWeek) {
 		var daysObject = {};
 		
 		// Если некоторые дни были пропущены, считаем их как отработанные полный рабочий день
-		leftMinutes -= (daysPassed - daysArray.length) * WORK_DAY_MINUTES;
+		//leftMinutes -= (daysPassed - daysArray.length) * WORK_DAY_MINUTES;
 
 		var totalOverUnderTime = 0;
 
@@ -82,13 +104,18 @@ function get(username, date, countLastWeek) {
 		// Если считаем прошлую неделю, то от оставшихся минут отнимаем то, что осталось на прошлой неделе
 		if(prevWeekData) {
 			totalPerLastWeek = prevWeekData.leftMinutes + (prevWeekData.prevWeekTime != null ? prevWeekData.prevWeekTime : 0);
-			//console.log(totalPerLastWeek);
 			leftMinutes += totalPerLastWeek;
 			totalOverUnderTime -= totalPerLastWeek;
 		}
 		var finishedFn = function(item) { return item.outDate != null; };
 
 		daysArray.forEach(function(dayObject) {
+			
+			var currDate = relativeDate.clone().startOf('isoweek').add(dayObject.day - 1, 'days').format('YYYY-MM-DD');
+			var WORK_DAY_MINUTES = getWorkingDayMinutes(currDate);
+			//if(dayObject.fake) {
+				//leftMinutes -= WORK_DAY_MINUTES;
+			//}
 
 			// Сколько реально осталось работать в данный день. В последний день обычно меньше, если есть переработки
 			var reallyLeft = (leftMinutes >= WORK_DAY_MINUTES ? WORK_DAY_MINUTES : leftMinutes);
@@ -184,7 +211,7 @@ function get(username, date, countLastWeek) {
 		var finishedMinutes = latestDay.times.filter(finishedFn).sum(function(item) { return item.minutes });
 
 		// Сколько осталось отработать за сегодня, не считая незавершенное время
-		var leftMinutesToWork = WORK_DAY_MINUTES - finishedMinutes;
+		var leftMinutesToWork = getWorkingDayMinutes(latestDay.times.last().inDate.format('YYYY-MM-DD')) - finishedMinutes;
 						
 		if(daysArray.length > 0) {
 			minutesPerLeftDays = leftMinutesToWork - (totalOverUnderTime / (workingDays - daysArray.length + 1)).floor();		
@@ -266,7 +293,6 @@ function getRemaining(workTimes, relativeDate) {
 		var outItem = group.find(function(item) { return item.direction === 'out'; });
 		
 		var inDate = moment(inItem.date);			
-		
 
 		// Если не было выхода, считаем его как сейчас
 		if(outItem == null) {
@@ -290,11 +316,12 @@ function getRemaining(workTimes, relativeDate) {
 	// Заполняем пропущенные дни значениями по умолчанию
 	(1).upto(currentWeekday).forEach(function(weekday, index) {
 		if(weekdays.indexOf(weekday) === -1 && weekday != 6 && weekday != 7) {
-			var date = moment().startOf('isoweek').add(weekday, 'days');
+			var date = moment().startOf('isoweek').add(weekday - 1, 'days');
 			
 			var inDate = date.clone().hours(9).minutes(0);
-			var outDate = date.clone().hours(17).minutes(30)
-			data.insert({fake: true, day: weekday, minutes: WORK_DAY_MINUTES, inDate: inDate, outDate: outDate}, index);
+			var minutes = getWorkingDayMinutes(inDate.format('YYYY-MM-DD'));
+			var outDate = inDate.clone().add(minutes, 'minutes');
+			data.insert({fake: true, day: weekday, minutes: minutes, inDate: inDate, outDate: outDate}, index);
 		}
 	});
 	
