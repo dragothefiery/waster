@@ -83,14 +83,18 @@
 											<span class="timer-lst_day"><%= data.daysObjectsArray[i].weekdayName %></span>: 
 										</div>
 										<div class="col-xs-12 col-sm-12 col-md-7 col-lg-7">
+											<% if(!data.daysObjectsArray[i].fake) { %>
 											<%= data.daysObjectsArray[i].workedThisDay %>,
 											<span class="<%= data.daysObjectsArray[i].overUnder ? 'green' : 'red' %>"><%= data.daysObjectsArray[i].overUnderText %></span>
-											(
-											<% for(var j = 0; j < data.daysObjectsArray[i].times.length; j++) { %>
-												<%= data.daysObjectsArray[i].times[j].from %> - <%= data.daysObjectsArray[i].times[j].to %>
-												<% if(j != data.daysObjectsArray[i].times.length - 1) { %>, <% } %>
+												(
+												<% for(var j = 0; j < data.daysObjectsArray[i].times.length; j++) { %>
+													<%= data.daysObjectsArray[i].times[j].from %> - <%= data.daysObjectsArray[i].times[j].to %>
+													<% if(j != data.daysObjectsArray[i].times.length - 1) { %>, <% } %>
+												<% } %>
+												)
+											<% } else { %>
+												<span class="red">Пропуск</span>
 											<% } %>
-											)
 										</div>
 											
 										<div class="col-xs-12 col-sm-12 col-md-2 col-lg-2">
